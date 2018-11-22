@@ -35,6 +35,7 @@ void loop()
   {
     Serial.println(inputString);
     mode = inputString.toInt();
+    moving_index = -1;
     // clear the string:
     inputString = "";
     stringComplete = false;    
@@ -44,12 +45,11 @@ void loop()
   {
     case 0:
     off();
-    moving_index = -1;
+    
     break;
 
     case 1:
     eject_sys();
-    moving_index = -1;
     break;
 
     case 2:
@@ -68,6 +68,24 @@ void loop()
     strip.setPixelColor(moving_index, blue);
     strip.show();
     delay(200);
+    break;
+
+    case 3:
+    Serial.println("case 3");
+    if (moving_index == -1)
+    {
+      off();
+    }
+    moving_index++;
+    if (moving_index >= strip.numPixels())
+    {
+      strip.setPixelColor(strip.numPixels() - 1, 0, 0, 0);
+      moving_index = 0;
+    }
+    strip.setPixelColor(moving_index - 1, 0, 0, 0);
+    strip.setPixelColor(moving_index, blue);
+    strip.show();
+    delay(150);
     break;
   }
   // put your main code here, to run repeatedly:
