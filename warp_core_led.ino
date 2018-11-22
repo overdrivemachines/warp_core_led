@@ -12,6 +12,7 @@ String inputString = "";         // a String to hold incoming data
 bool stringComplete = false;  // whether the string is complete
 
 int mode = 0;
+int moving_index = -1;
 
 void setup() {
   // initialize serial:
@@ -40,15 +41,35 @@ void loop()
   }
 
   switch(mode)
-    {
-      case 0:
-      off();
-      break;
+  {
+    case 0:
+    off();
+    moving_index = -1;
+    break;
 
-      case 1:
-      eject_sys();
-      break;
+    case 1:
+    eject_sys();
+    moving_index = -1;
+    break;
+
+    case 2:
+    uint32_t blue = Color(0, 0, 255);
+    if (moving_index == -1)
+    {
+      off();
     }
+    moving_index++;
+    if (moving_index >= strip.numPixels())
+    {
+      strip.setPixelColor(strip.numPixels() - 1, 0, 0, 0);
+      moving_index = 0;
+    }
+    strip.setPixelColor(moving_index - 1, 0, 0, 0);
+    strip.setPixelColor(moving_index, blue);
+    strip.show();
+    delay(200);
+    break;
+  }
   // put your main code here, to run repeatedly:
   // off();
   // eject_sys();
@@ -60,7 +81,7 @@ void loop()
 ///////////////////////////////////////////////
 void off()
 {
-  for (uint8_t i; i < strip.numPixels(); i++)
+  for (uint8_t i = 0; i < strip.numPixels(); i++)
   {
     strip.setPixelColor(i, 0, 0, 0);
   }
