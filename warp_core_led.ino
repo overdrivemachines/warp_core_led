@@ -5,14 +5,25 @@
 #endif
 uint8_t dataPin  = 9;    // Yellow wire on Adafruit Pixels
 uint8_t clockPin = 7;    // Green wire on Adafruit Pixels
+// Number of pixels/leds
 int num_leds = 28;
 Adafruit_WS2801 strip = Adafruit_WS2801(num_leds, dataPin, clockPin);
 
-String inputString = "";         // a String to hold incoming data
+String inputString = "";      // a String to hold incoming data
 bool stringComplete = false;  // whether the string is complete
 
-int mode = 0;
-int moving_index = -1;
+
+int mode = 0; // Mode will be set by input from serial
+int moving_index = -1; // Keeps track of which pixel/led is lit
+uint32_t blue; // Blue color
+uint32_t red; // Red color
+uint32_t white; // White color
+bool is_red = false; // is the strip showing all red?
+bool is_red_alert = false; // is red alert mode activated?
+int lower_bound = 0; // moving led's lower bound
+int upper_bound = num_leds; // moving led's upper bound
+
+void moving(int delay_time = 200);
 
 void setup() {
   // initialize serial:
@@ -28,13 +39,33 @@ void setup() {
   while (!Serial) {
     ; // wait for serial port to connect. Needed for native USB port only
   }
+
+  blue = Color(0, 0, 255);
+  red = Color(255, 0, 0);
+  white = Color(255, 255, 255);
 }
 void loop() 
 {
   if (stringComplete) 
   {
     Serial.println(inputString);
-    mode = inputString.toInt();
+    if (inputString.toInt() == 6)
+    {
+      // When red alert is activated, the mode retains its value
+      is_red_alert = true;
+      Serial.println("Red Alert Activated");
+    }
+    else if (inputString.toInt() == 7)
+    {
+      // When red alert is deactivated, the mode retains its value
+      is_red_alert = false;
+      Serial.println("Red Alert Deactivated");
+    }
+    else
+    {
+      mode = inputString.toInt();
+    }
+    
     moving_index = -1;
     // clear the string:
     inputString = "";
@@ -43,50 +74,54 @@ void loop()
 
   switch(mode)
   {
+    // 0 - Off
     case 0:
-    off();
+    {
+      off();
+      break;
+    }
     
-    break;
-
+    // 1 - Eject
     case 1:
-    eject_sys();
-    break;
+    {
+      eject_sys();
+      delay(990);
+      break;
+    }    
 
+    // 2 - Rest
     case 2:
-    uint32_t blue = Color(0, 0, 255);
-    if (moving_index == -1)
     {
-      off();
+      moving(200);
+      break;
     }
-    moving_index++;
-    if (moving_index >= strip.numPixels())
-    {
-      strip.setPixelColor(strip.numPixels() - 1, 0, 0, 0);
-      moving_index = 0;
-    }
-    strip.setPixelColor(moving_index - 1, 0, 0, 0);
-    strip.setPixelColor(moving_index, blue);
-    strip.show();
-    delay(200);
-    break;
 
+    // 3 - Moving
     case 3:
-    Serial.println("case 3");
-    if (moving_index == -1)
+    {
+      moving(100);
+      break;
+    }
+    
+
+    // 4 - Warp
+    case 4:
+    {
+      moving(50);
+      break;
+    }
+
+    // 5 - Super Warp
+    case 5:
+    {
+      moving(25);
+      break;
+    }
+    
+    default:
     {
       off();
     }
-    moving_index++;
-    if (moving_index >= strip.numPixels())
-    {
-      strip.setPixelColor(strip.numPixels() - 1, 0, 0, 0);
-      moving_index = 0;
-    }
-    strip.setPixelColor(moving_index - 1, 0, 0, 0);
-    strip.setPixelColor(moving_index, blue);
-    strip.show();
-    delay(150);
-    break;
   }
   // put your main code here, to run repeatedly:
   // off();
@@ -112,20 +147,24 @@ void off()
 void eject_sys()
 {
   uint8_t i;
-  uint32_t color = Color(255, 0, 0); // Red
-  for (i = 0; i < strip.numPixels(); i++)
+  if (is_red == false)
   {
-    strip.setPixelColor(i, color);
+    for (i = 0; i < strip.numPixels(); i++)
+    {
+      strip.setPixelColor(i, red);
+    }
+    strip.show();
+    is_red = true;
   }
-  strip.show();
-  delay(990);
-  color = Color(255, 255, 255); // White
-  for (i = 0; i < strip.numPixels(); i++)
+  else
   {
-    strip.setPixelColor(i, color);
+    for (i = 0; i < strip.numPixels(); i++)
+    {
+      strip.setPixelColor(i, white);
+    }
+    strip.show();
+    is_red = false;
   }
-  strip.show();
-  delay(990);
 }
 ///////////////////////////////////////////////
 // 2. Warp power up
@@ -139,6 +178,33 @@ void power_up()
   colorWipeIndividual(Color(0, 0, 25), t);
   colorWipeIndividual(Color(0, 0, 120), t);
   colorWipeIndividual(Color(0, 0, 255), t);
+}
+
+void moving(int delay_time = 200)
+{
+  if (is_red_alert == true)
+  {
+    // When red alert mode is activated
+    
+  }
+  else
+  {
+    if (moving_index == -1)
+    {
+      off();
+    }
+    moving_index++;
+    if (moving_index >= strip.numPixels())
+    {
+      strip.setPixelColor(strip.numPixels() - 1, 0, 0, 0);
+      moving_index = 0;
+    }
+    strip.setPixelColor(moving_index - 1, 0, 0, 0);
+    strip.setPixelColor(moving_index, blue);
+    strip.show();
+  }
+  
+  delay(delay_time);
 }
 // fill the dots one after the other with said color
 // good for testing purposes
