@@ -21,7 +21,7 @@ uint32_t white; // White color
 bool is_red = false; // is the strip showing all red?
 bool is_red_alert = false; // is red alert mode activated?
 int lower_bound = 0; // moving led's lower bound
-int upper_bound = num_leds; // moving led's upper bound
+int upper_bound = num_leds - 1; // moving led's upper bound
 
 void moving(int delay_time = 200);
 
@@ -54,6 +54,21 @@ void loop()
       // When red alert is activated, the mode retains its value
       is_red_alert = true;
       Serial.println("Red Alert Activated");
+      if (num_leds >= 7)
+      {
+        // The first 3 and last 3 leds will be constantly red
+        // only the inner leds will change        
+        lower_bound = 3;
+        upper_bound = num_leds - 4;
+
+        // When red alert mode is activated
+        for (uint8_t i = 0; i < lower_bound; i++)
+        {
+          strip.setPixelColor(i, 255, 0, 0);
+          strip.setPixelColor(i + upper_bound + 1, 255, 0, 0);
+        }
+        strip.show();
+      }
     }
     else if (inputString.toInt() == 7)
     {
@@ -63,10 +78,14 @@ void loop()
     }
     else
     {
-      mode = inputString.toInt();
+      if (inputString.toInt() != mode)
+      {
+        moving_index = -1;
+        mode = inputString.toInt();
+      }      
     }
     
-    moving_index = -1;
+    
     // clear the string:
     inputString = "";
     stringComplete = false;    
@@ -126,8 +145,7 @@ void loop()
   // put your main code here, to run repeatedly:
   // off();
   // eject_sys();
-  //power_up();
-  
+  //power_up();  
 }
 ///////////////////////////////////////////////
 // 0. Off
@@ -184,8 +202,30 @@ void moving(int delay_time = 200)
 {
   if (is_red_alert == true)
   {
-    // When red alert mode is activated
+    if ((moving_index == -1) || (moving_index == lower_bound) || (moving_index > upper_bound))
+    {
+      // Clear the strip from the lower bound to the upper bound
+      for (uint8_t i = lower_bound; i <= upper_bound; i++)
+      {
+        strip.setPixelColor(i, 0, 0, 0);
+      }
+      strip.show();
+      moving_index = lower_bound;
+      // turn off last pixel/led
+      strip.setPixelColor(upper_bound, 0, 0, 0);
+    }
+    else
+    {
+      // turn off previous pixel/led
+      strip.setPixelColor(moving_index - 1, 0, 0, 0);
+    }
+
+    // turn on moving_index pixel/led
+    strip.setPixelColor(moving_index, blue);
+    strip.show();
     
+    // increment moving_index
+    moving_index++;
   }
   else
   {
