@@ -7,7 +7,8 @@ LED lights for the Warp Core
 3) Moving - ship engines are engaged, medium moving from bottom to top one pixel at a time ...
 4) warp -
 5) super warp -
-6) red alert - 
+6) Enable Red Alert - 
+7) Disable Red Alert
 
 - - - - - - -
 0 1 2 3 4 5 6

@@ -126,8 +126,8 @@ void loop()
     // 2 - Rest
     case 2:
     {
-      // moving(200);
-      moving(700);
+      moving(200);
+      //moving(700);
       break;
     }
 
