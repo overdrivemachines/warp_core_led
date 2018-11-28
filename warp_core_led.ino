@@ -15,7 +15,9 @@ bool stringComplete = false;  // whether the string is complete
 
 int mode = 0; // Mode will be set by input from serial
 int moving_index = -1; // Keeps track of which pixel/led is lit
+int adjust_previous = -2; // used to keep track of whether the last 2 leds turn on when the first led starts (in moving led mode)
 uint32_t blue; // Blue color
+uint32_t light_blue; // Light Blue color
 uint32_t red; // Red color
 uint32_t white; // White color
 bool is_red = false; // is the strip showing all red?
@@ -40,6 +42,7 @@ void setup() {
     ; // wait for serial port to connect. Needed for native USB port only
   }
 
+  light_blue = Color(0, 0, 8);
   blue = Color(0, 0, 255);
   red = Color(255, 0, 0);
   white = Color(255, 255, 255);
@@ -123,7 +126,8 @@ void loop()
     // 2 - Rest
     case 2:
     {
-      moving(200);
+      // moving(200);
+      moving(700);
       break;
     }
 
@@ -212,7 +216,7 @@ void power_up()
 
 void moving(int delay_time = 200)
 {
-  if ((moving_index == -1) || (moving_index == lower_bound) || (moving_index > upper_bound))
+  if (moving_index == -1)
   {
     // Clear the strip from the lower bound to the upper bound
     for (uint8_t i = lower_bound; i <= upper_bound; i++)
@@ -221,17 +225,43 @@ void moving(int delay_time = 200)
     }
     strip.show();
     moving_index = lower_bound;
-    // turn off last pixel/led
-    strip.setPixelColor(upper_bound, 0, 0, 0);
+    adjust_previous = -1;
+  }
+  
+  if ((moving_index == lower_bound) || (moving_index > upper_bound))
+  {
+    // Clear the strip from the lower bound to the upper bound - 2
+    // The last 2 leds could still be glowing
+    for (uint8_t i = lower_bound; i <= upper_bound - 2; i++)
+    {
+      strip.setPixelColor(i, 0, 0, 0);
+    }
+    strip.show();
+    moving_index = lower_bound;
+    // adjust the last 2 pixels/leds
+    if (adjust_previous >= 1)
+    {
+      strip.setPixelColor(previous_index(moving_index, 1), blue);
+      strip.setPixelColor(previous_index(moving_index, 2), light_blue);
+      strip.setPixelColor(previous_index(moving_index, 3), 0, 0, 0);
+    }
+    else
+      adjust_previous++;    
   }
   else
   {
-    // turn off previous pixel/led
-    strip.setPixelColor(moving_index - 1, 0, 0, 0);
+    if (adjust_previous >= 1)
+    {
+      strip.setPixelColor(previous_index(moving_index, 1), blue);
+      strip.setPixelColor(previous_index(moving_index, 2), light_blue);
+      strip.setPixelColor(previous_index(moving_index, 3), 0, 0, 0);
+    }
+    
+    adjust_previous++;
   }
 
   // turn on moving_index pixel/led
-  strip.setPixelColor(moving_index, blue);
+  strip.setPixelColor(moving_index, light_blue);
   strip.show();
   
   // increment moving_index
@@ -273,6 +303,36 @@ uint32_t Color(byte r, byte g, byte b)
   return c;
 }
 
+
+int previous_index(int index, uint8_t distance)
+{
+  for (uint8_t i = 0; i < distance; i++)
+  {
+    if (index == lower_bound)
+      index = upper_bound;
+    else
+      index--;
+  }
+  return index;
+}
+
+int previous_index(int index)
+{
+  if (index == lower_bound)
+    return upper_bound;
+  else
+    return index - 1;
+}
+
+int previous2_index(int index)
+{
+  if (index == lower_bound)
+    return upper_bound - 1;
+  else if (index == lower_bound + 1)
+    return upper_bound;
+  else
+    return index - 2;  
+}
 
 /*
   SerialEvent occurs whenever a new data comes in the hardware serial RX. This
